@@ -20,8 +20,7 @@ namespace Mochineko.RelentStateMachine.Tests
 
             transitionMapBuilder.RegisterTransition<InactiveState, ActiveState>(MockEvent.Activate);
             transitionMapBuilder.RegisterTransition<ActiveState, InactiveState>(MockEvent.Deactivate);
-            transitionMapBuilder.RegisterTransition<InactiveState, ErrorState>(MockEvent.Fail);
-            transitionMapBuilder.RegisterTransition<ActiveState, ErrorState>(MockEvent.Fail);
+            transitionMapBuilder.RegisterAnyTransition<ErrorState>(MockEvent.Fail);
 
             IStateMachine<MockEvent, MockContext> stateMachine;
             var initializeResult = await StateMachine<MockEvent, MockContext>.CreateAsync(
@@ -41,7 +40,7 @@ namespace Mochineko.RelentStateMachine.Tests
 
             stateMachine.IsCurrentState<InactiveState>()
                 .Should().BeTrue(
-                    because: "Initial state should be InactiveState.");
+                    because: $"Initial state should be {nameof(InactiveState)}.");
 
             stateMachine.Context.Active
                 .Should().BeFalse();
@@ -50,19 +49,20 @@ namespace Mochineko.RelentStateMachine.Tests
 
             stateMachine.IsCurrentState<InactiveState>()
                 .Should().BeTrue(
-                    because: "State should not change on update.");
+                    because: $"State should not change on update.");
 
             (await stateMachine
                     .SendEventAsync(MockEvent.Deactivate, CancellationToken.None))
                 .Failure.Should().BeTrue(
-                    because: "Already in inactive state.");
-
-            (await stateMachine
-                    .SendEventAsync(MockEvent.Activate, CancellationToken.None))
-                .Success.Should().BeTrue(
-                    because: "Can change state from inactive to active by activate event.");
+                    because: $"Already in {nameof(InactiveState)}.");
 
             // Active state ------------------------------------------------------
+            
+            (await stateMachine
+                    .SendEventAsync(MockEvent.Activate, CancellationToken.None))
+                .Success.Should().BeTrue(
+                    because:
+                    $"Can change state from {nameof(InactiveState)} to {nameof(ActiveState)} by {MockEvent.Activate}.");
 
             stateMachine.IsCurrentState<ActiveState>()
                 .Should().BeTrue();
@@ -75,21 +75,22 @@ namespace Mochineko.RelentStateMachine.Tests
             (await stateMachine
                     .SendEventAsync(MockEvent.Activate, CancellationToken.None))
                 .Failure.Should().BeTrue(
-                    because: "Already in active state.");
+                    because: $"Already in {nameof(ActiveState)}.");
 
             stateMachine.IsCurrentState<ActiveState>()
                 .Should().BeTrue(
-                    because: "State should not change by adding event.");
+                    because: "State should not change by sending event failure.");
 
             stateMachine.Context.Active
                 .Should().BeTrue();
 
+            // Inactive state ------------------------------------------------------
+            
             (await stateMachine
                     .SendEventAsync(MockEvent.Deactivate, CancellationToken.None))
                 .Success.Should().BeTrue(
-                    because: "Can change state from active to inactive by deactivate event.");
-
-            // Inactive state ------------------------------------------------------
+                    because:
+                    $"Can change state from {nameof(ActiveState)} to {nameof(ActiveState)} by {MockEvent.Deactivate}.");
 
             stateMachine.IsCurrentState<InactiveState>()
                 .Should().BeTrue();
@@ -98,6 +99,19 @@ namespace Mochineko.RelentStateMachine.Tests
                 .Should().BeFalse();
 
             await stateMachine.UpdateAsync(CancellationToken.None);
+
+            // Error state ------------------------------------------------------
+            
+            (await stateMachine
+                    .SendEventAsync(MockEvent.Fail, CancellationToken.None))
+                .Success.Should().BeTrue(
+                    because: $"Error state can be transited from any state by {MockEvent.Fail}.");
+
+            stateMachine.IsCurrentState<ErrorState>()
+                .Should().BeTrue();
+
+            stateMachine.Context.ErrorMessage
+                .Should().Be("Manual Error");
         }
     }
 }

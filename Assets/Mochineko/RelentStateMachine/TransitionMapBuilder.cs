@@ -12,6 +12,9 @@ namespace Mochineko.RelentStateMachine
         private readonly Dictionary<IState<TContext>, Dictionary<TEvent, IState<TContext>>>
             transitionMap = new();
 
+        private readonly Dictionary<TEvent, IState<TContext>>
+            anyTransitionMap = new();
+
         public static TransitionMapBuilder<TEvent, TContext> Create<TInitialState>()
             where TInitialState : IState<TContext>, new()
         {
@@ -52,11 +55,28 @@ namespace Mochineko.RelentStateMachine
             }
         }
 
+        public void RegisterAnyTransition<TToState>(TEvent @event)
+            where TToState : IState<TContext>, new()
+        {
+            var toState = GetOrCreateState<TToState>();
+
+            if (anyTransitionMap.TryGetValue(@event, out var nextState))
+            {
+                throw new InvalidOperationException(
+                    $"Already exists transition from any state to {nextState.GetType()} with event {@event}.");
+            }
+            else
+            {
+                anyTransitionMap.Add(@event, toState);
+            }
+        }
+
         public ITransitionMap<TEvent, TContext> Build()
             => new TransitionMap<TEvent, TContext>(
                 initialState,
                 states,
-                BuildReadonlyTransitionMap());
+                BuildReadonlyTransitionMap(),
+                anyTransitionMap);
 
         private IReadOnlyDictionary<
                 IState<TContext>,

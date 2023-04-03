@@ -6,6 +6,9 @@ namespace Mochineko.RelentStateMachine
         void RegisterTransition<TFromState, TToState>(TEvent @event)
             where TFromState : IState<TContext>, new()
             where TToState : IState<TContext>, new();
+        
+        void RegisterAnyTransition<TToState>(TEvent @event)
+            where TToState : IState<TContext>, new();
 
         ITransitionMap<TEvent, TContext> Build();
     }

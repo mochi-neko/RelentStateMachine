@@ -14,14 +14,19 @@ namespace Mochineko.RelentStateMachine
                 IReadOnlyDictionary<TEvent, IState<TContext>>>
             transitionMap;
 
+        private readonly IReadOnlyDictionary<TEvent, IState<TContext>>
+            anyTransitionMap;
+
         public TransitionMap(
             IState<TContext> initialState,
             IReadOnlyList<IState<TContext>> states,
-            IReadOnlyDictionary<IState<TContext>, IReadOnlyDictionary<TEvent, IState<TContext>>> transitionMap)
+            IReadOnlyDictionary<IState<TContext>, IReadOnlyDictionary<TEvent, IState<TContext>>> transitionMap,
+            IReadOnlyDictionary<TEvent, IState<TContext>> anyTransitionMap)
         {
             this.initialState = initialState;
             this.states = states;
             this.transitionMap = transitionMap;
+            this.anyTransitionMap = anyTransitionMap;
         }
 
         IState<TContext> ITransitionMap<TEvent, TContext>.InitialState
@@ -37,17 +42,15 @@ namespace Mochineko.RelentStateMachine
                 {
                     return ResultFactory.Succeed(nextState);
                 }
-                else
-                {
-                    return ResultFactory.Fail<IState<TContext>>(
-                        $"Not found transition from {currentState.GetType()} with event {@event}.");
-                }
             }
-            else
+            
+            if (anyTransitionMap.TryGetValue(@event, out var nextStateFromAny))
             {
-                return ResultFactory.Fail<IState<TContext>>(
-                    $"Not found transition from {currentState.GetType()}.");
+                return ResultFactory.Succeed(nextStateFromAny);
             }
+
+            return ResultFactory.Fail<IState<TContext>>(
+                $"Not found transition from {currentState.GetType()} with event {@event}.");
         }
 
         public void Dispose()
