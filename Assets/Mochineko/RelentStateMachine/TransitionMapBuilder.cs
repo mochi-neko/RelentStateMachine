@@ -15,6 +15,8 @@ namespace Mochineko.RelentStateMachine
         private readonly Dictionary<TEvent, IState<TContext>>
             anyTransitionMap = new();
 
+        private bool disposed = false;
+
         public static TransitionMapBuilder<TEvent, TContext> Create<TInitialState>()
             where TInitialState : IState<TContext>, new()
         {
@@ -28,10 +30,25 @@ namespace Mochineko.RelentStateMachine
             states.Add(this.initialState);
         }
 
+        public void Dispose()
+        {
+            if (disposed)
+            {
+                throw new ObjectDisposedException(nameof(TransitionMapBuilder<TEvent, TContext>));
+            }
+
+            disposed = true;
+        }
+
         public void RegisterTransition<TFromState, TToState>(TEvent @event)
             where TFromState : IState<TContext>, new()
             where TToState : IState<TContext>, new()
         {
+            if (disposed)
+            {
+                throw new ObjectDisposedException(nameof(TransitionMapBuilder<TEvent, TContext>));
+            }
+
             var fromState = GetOrCreateState<TFromState>();
             var toState = GetOrCreateState<TToState>();
 
@@ -58,6 +75,11 @@ namespace Mochineko.RelentStateMachine
         public void RegisterAnyTransition<TToState>(TEvent @event)
             where TToState : IState<TContext>, new()
         {
+            if (disposed)
+            {
+                throw new ObjectDisposedException(nameof(TransitionMapBuilder<TEvent, TContext>));
+            }
+            
             var toState = GetOrCreateState<TToState>();
 
             if (anyTransitionMap.TryGetValue(@event, out var nextState))
@@ -72,11 +94,23 @@ namespace Mochineko.RelentStateMachine
         }
 
         public ITransitionMap<TEvent, TContext> Build()
-            => new TransitionMap<TEvent, TContext>(
+        {
+            if (disposed)
+            {
+                throw new ObjectDisposedException(nameof(TransitionMapBuilder<TEvent, TContext>));
+            }
+            
+            var result = new TransitionMap<TEvent, TContext>(
                 initialState,
                 states,
                 BuildReadonlyTransitionMap(),
                 anyTransitionMap);
+
+            // Cannot reuse builder after build.
+            this.Dispose();
+            
+            return result;
+        }
 
         private IReadOnlyDictionary<
                 IState<TContext>,

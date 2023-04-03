@@ -1,7 +1,9 @@
 #nullable enable
+using System;
+
 namespace Mochineko.RelentStateMachine
 {
-    public interface ITransitionMapBuilder<in TEvent, TContext>
+    public interface ITransitionMapBuilder<in TEvent, TContext> : IDisposable
     {
         void RegisterTransition<TFromState, TToState>(TEvent @event)
             where TFromState : IState<TContext>, new()

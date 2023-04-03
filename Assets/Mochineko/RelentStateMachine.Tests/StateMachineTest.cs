@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -13,7 +14,7 @@ namespace Mochineko.RelentStateMachine.Tests
     {
         [Test]
         [RequiresPlayMode(false)]
-        public async Task Test()
+        public async Task StateMachineShouldTransitByEvent()
         {
             // NOTE: Initial state is specified at constructor.
             var transitionMapBuilder = TransitionMapBuilder<MockEvent, MockContext>
@@ -121,6 +122,24 @@ namespace Mochineko.RelentStateMachine.Tests
 
             stateMachine.Context.ErrorMessage
                 .Should().Be("Manual Error");
+        }
+        
+        [Test]
+        [RequiresPlayMode(false)]
+        public void BuilderShouldNotBeReused()
+        {
+            var transitionMapBuilder = TransitionMapBuilder<MockEvent, MockContext>
+                .Create<InactiveState>();
+
+            transitionMapBuilder.RegisterTransition<InactiveState, ActiveState>(MockEvent.Activate);
+            transitionMapBuilder.RegisterTransition<ActiveState, InactiveState>(MockEvent.Deactivate);
+            
+            _ = transitionMapBuilder.Build();
+
+            Action operateBuilder = () => transitionMapBuilder
+                .RegisterAnyTransition<ErrorState>(MockEvent.Fail);
+
+            operateBuilder.Should().Throw<ObjectDisposedException>();
         }
     }
 }

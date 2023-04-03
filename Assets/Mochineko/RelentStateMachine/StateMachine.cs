@@ -10,11 +10,11 @@ namespace Mochineko.RelentStateMachine
     {
         private readonly ITransitionMap<TEvent, TContext> transitionMap;
         public TContext Context { get; }
-        private IState<TContext> state;
+        private IState<TContext> currentState;
 
         public bool IsCurrentState<TState>()
             where TState : IState<TContext>
-            => state is TState;
+            => currentState is TState;
 
         private readonly SemaphoreSlim semaphoreSlim = new(
             initialCount: 1,
@@ -34,7 +34,7 @@ namespace Mochineko.RelentStateMachine
                 context,
                 semaphoreTimeout);
 
-            var initializeResult = await instance.state
+            var initializeResult = await instance.currentState
                 .EnterAsync(context, cancellationToken);
             if (initializeResult.Success)
             {
@@ -58,7 +58,7 @@ namespace Mochineko.RelentStateMachine
         {
             this.transitionMap = transitionMap;
             this.Context = context;
-            this.state = this.transitionMap.InitialState;
+            this.currentState = this.transitionMap.InitialState;
 
             this.semaphoreTimeout =
                 semaphoreTimeout
@@ -84,7 +84,7 @@ namespace Mochineko.RelentStateMachine
             try
             {
                 IState<TContext> nextState;
-                var transitResult = transitionMap.CanTransit(state, @event);
+                var transitResult = transitionMap.CanTransit(currentState, @event);
                 if (transitResult is ISuccessResult<IState<TContext>> transitionSuccess)
                 {
                     nextState = transitionSuccess.Result;
@@ -99,11 +99,11 @@ namespace Mochineko.RelentStateMachine
                     throw new ResultPatternMatchException(nameof(transitResult));
                 }
 
-                var exitResult = await state.ExitAsync(Context, cancellationToken);
+                var exitResult = await currentState.ExitAsync(Context, cancellationToken);
                 if (exitResult is IFailureResult exitFailure)
                 {
                     return ResultFactory.Fail(
-                        $"Failed to exit current state:{state.GetType()} because of {exitFailure.Message}.");
+                        $"Failed to exit current state:{currentState.GetType()} because of {exitFailure.Message}.");
                 }
 
                 var enterResult = await nextState.EnterAsync(Context, cancellationToken);
@@ -113,7 +113,7 @@ namespace Mochineko.RelentStateMachine
                         $"Failed to enter state:{nextState.GetType()} because of {enterFailure.Message}.");
                 }
 
-                state = nextState;
+                currentState = nextState;
 
                 return ResultFactory.Succeed();
             }
@@ -125,7 +125,7 @@ namespace Mochineko.RelentStateMachine
 
         public async UniTask<IResult> UpdateAsync(CancellationToken cancellationToken)
         {
-            var updateResult = await state.UpdateAsync(Context, cancellationToken);
+            var updateResult = await currentState.UpdateAsync(Context, cancellationToken);
             if (updateResult is ISuccessResult)
             {
                 return ResultFactory.Succeed();
@@ -133,7 +133,7 @@ namespace Mochineko.RelentStateMachine
             else if (updateResult is IFailureResult updateFailure)
             {
                 return ResultFactory.Fail(
-                    $"Failed to update current state:{state.GetType()} because of {updateFailure.Message}.");
+                    $"Failed to update current state:{currentState.GetType()} because of {updateFailure.Message}.");
             }
             else
             {
