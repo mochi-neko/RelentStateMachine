@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Mochineko.Relent.Result;
@@ -15,14 +16,23 @@ namespace Mochineko.RelentStateMachine
             where TState : IState<TContext>
             => state is TState;
 
+        private readonly SemaphoreSlim semaphoreSlim = new(
+            initialCount: 1,
+            maxCount: 1);
+
+        private readonly TimeSpan semaphoreTimeout;
+        private const float DefaultSemaphoreTimeoutSeconds = 30f;
+
         public static async UniTask<IResult<StateMachine<TEvent, TContext>>> CreateAsync(
             ITransitionMap<TEvent, TContext> transitionMap,
             TContext context,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            TimeSpan? semaphoreTimeout = null)
         {
             var instance = new StateMachine<TEvent, TContext>(
                 transitionMap,
-                context);
+                context,
+                semaphoreTimeout);
 
             var initializeResult = await instance.state
                 .EnterAsync(context, cancellationToken);
@@ -43,50 +53,74 @@ namespace Mochineko.RelentStateMachine
 
         private StateMachine(
             ITransitionMap<TEvent, TContext> transitionMap,
-            TContext context)
+            TContext context,
+            TimeSpan? semaphoreTimeout = null)
         {
             this.transitionMap = transitionMap;
             this.Context = context;
             this.state = this.transitionMap.InitialState;
+
+            this.semaphoreTimeout =
+                semaphoreTimeout
+                ?? TimeSpan.FromSeconds(DefaultSemaphoreTimeoutSeconds);
         }
 
         public async UniTask<IResult> SendEventAsync(
             TEvent @event,
             CancellationToken cancellationToken)
         {
-            IState<TContext> nextState;
-            var transitResult = transitionMap.CanTransit(state, @event);
-            if (transitResult is ISuccessResult<IState<TContext>> transitionSuccess)
+            // Restrict to one event at a time.
+            try
             {
-                nextState = transitionSuccess.Result;
+                await semaphoreSlim.WaitAsync(semaphoreTimeout, cancellationToken);
             }
-            else if (transitResult is IFailureResult<IState<TContext>> transitionFailure)
+            catch (OperationCanceledException exception)
             {
+                semaphoreSlim.Release();
                 return ResultFactory.Fail(
-                    $"Failed to transit state because of {transitionFailure.Message}.");
+                    $"Cancelled to send event because of {exception}.");
             }
-            else
+
+            try
             {
-                throw new ResultPatternMatchException(nameof(transitResult));
-            }
+                IState<TContext> nextState;
+                var transitResult = transitionMap.CanTransit(state, @event);
+                if (transitResult is ISuccessResult<IState<TContext>> transitionSuccess)
+                {
+                    nextState = transitionSuccess.Result;
+                }
+                else if (transitResult is IFailureResult<IState<TContext>> transitionFailure)
+                {
+                    return ResultFactory.Fail(
+                        $"Failed to transit state because of {transitionFailure.Message}.");
+                }
+                else
+                {
+                    throw new ResultPatternMatchException(nameof(transitResult));
+                }
 
-            var exitResult = await state.ExitAsync(Context, cancellationToken);
-            if (exitResult is IFailureResult exitFailure)
+                var exitResult = await state.ExitAsync(Context, cancellationToken);
+                if (exitResult is IFailureResult exitFailure)
+                {
+                    return ResultFactory.Fail(
+                        $"Failed to exit current state:{state.GetType()} because of {exitFailure.Message}.");
+                }
+
+                var enterResult = await nextState.EnterAsync(Context, cancellationToken);
+                if (enterResult is IFailureResult enterFailure)
+                {
+                    return ResultFactory.Fail(
+                        $"Failed to enter state:{nextState.GetType()} because of {enterFailure.Message}.");
+                }
+
+                state = nextState;
+
+                return ResultFactory.Succeed();
+            }
+            finally
             {
-                return ResultFactory.Fail(
-                    $"Failed to exit current state:{state.GetType()} because of {exitFailure.Message}.");
+                semaphoreSlim.Release();
             }
-
-            var enterResult = await nextState.EnterAsync(Context, cancellationToken);
-            if (enterResult is IFailureResult enterFailure)
-            {
-                return ResultFactory.Fail(
-                    $"Failed to enter state:{nextState.GetType()} because of {enterFailure.Message}.");
-            }
-
-            state = nextState;
-
-            return ResultFactory.Succeed();
         }
 
         public async UniTask<IResult> UpdateAsync(CancellationToken cancellationToken)
@@ -110,6 +144,7 @@ namespace Mochineko.RelentStateMachine
         public void Dispose()
         {
             transitionMap.Dispose();
+            semaphoreSlim.Dispose();
         }
     }
 }
