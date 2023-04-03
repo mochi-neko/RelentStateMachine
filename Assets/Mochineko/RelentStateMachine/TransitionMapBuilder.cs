@@ -1,11 +1,10 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using Mochineko.Relent.Result;
 
 namespace Mochineko.RelentStateMachine
 {
-    public sealed class StateStore<TEvent, TContext> : IStateStore<TEvent, TContext>
+    public sealed class TransitionMapBuilder<TEvent, TContext> : ITransitionMapBuilder<TEvent, TContext>
     {
         private readonly IState<TContext> initialState;
         private readonly List<IState<TContext>> states = new();
@@ -13,23 +12,20 @@ namespace Mochineko.RelentStateMachine
         private readonly Dictionary<IState<TContext>, Dictionary<TEvent, IState<TContext>>>
             transitionMap = new();
 
-        IState<TContext> IStateStore<TEvent, TContext>.InitialState
-            => initialState;
-
-        public static StateStore<TEvent, TContext> Create<TInitialState>()
+        public static TransitionMapBuilder<TEvent, TContext> Create<TInitialState>()
             where TInitialState : IState<TContext>, new()
         {
             var initialState = new TInitialState();
-            return new StateStore<TEvent, TContext>(initialState);
+            return new TransitionMapBuilder<TEvent, TContext>(initialState);
         }
 
-        private StateStore(IState<TContext> initialState)
+        private TransitionMapBuilder(IState<TContext> initialState)
         {
             this.initialState = initialState;
             states.Add(this.initialState);
         }
 
-        public void AddTransition<TFromState, TToState>(TEvent @event)
+        public void RegisterTransition<TFromState, TToState>(TEvent @event)
             where TFromState : IState<TContext>, new()
             where TToState : IState<TContext>, new()
         {
@@ -56,39 +52,26 @@ namespace Mochineko.RelentStateMachine
             }
         }
 
-        IResult<IState<TContext>> IStateStore<TEvent, TContext>.CanTransit(
-            IState<TContext> currentState,
-            TEvent @event)
+        public ITransitionMap<TEvent, TContext> Build()
+            => new TransitionMap<TEvent, TContext>(
+                initialState,
+                states,
+                BuildReadonlyTransitionMap());
+
+        private IReadOnlyDictionary<
+                IState<TContext>,
+                IReadOnlyDictionary<TEvent, IState<TContext>>>
+            BuildReadonlyTransitionMap()
         {
-            if (transitionMap.TryGetValue(currentState, out var candidates))
+            var result = new Dictionary<
+                IState<TContext>,
+                IReadOnlyDictionary<TEvent, IState<TContext>>>();
+            foreach (var (key, value) in transitionMap)
             {
-                if (candidates.TryGetValue(@event, out var nextState))
-                {
-                    return ResultFactory.Succeed(nextState);
-                }
-                else
-                {
-                    return ResultFactory.Fail<IState<TContext>>(
-                        $"Not found transition from {currentState.GetType()} with event {@event}.");
-                }
-            }
-            else
-            {
-                return ResultFactory.Fail<IState<TContext>>(
-                    $"Not found transition from {currentState.GetType()}.");
-            }
-        }
-
-        public void Dispose()
-        {
-            transitionMap.Clear();
-
-            foreach (var state in states)
-            {
-                state.Dispose();
+                result.Add(key, value);
             }
 
-            states.Clear();
+            return result;
         }
 
         private TState GetOrCreateState<TState>()

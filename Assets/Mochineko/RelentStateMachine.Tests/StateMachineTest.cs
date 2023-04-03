@@ -15,17 +15,17 @@ namespace Mochineko.RelentStateMachine.Tests
         [RequiresPlayMode(false)]
         public async Task Test()
         {
-            var transitionMap = StateStore<MockEvent, MockContext>
+            var transitionMapBuilder = TransitionMapBuilder<MockEvent, MockContext>
                 .Create<InactiveState>();
 
-            transitionMap.AddTransition<InactiveState, ActiveState>(MockEvent.Activate);
-            transitionMap.AddTransition<ActiveState, InactiveState>(MockEvent.Deactivate);
-            transitionMap.AddTransition<InactiveState, ErrorState>(MockEvent.Fail);
-            transitionMap.AddTransition<ActiveState, ErrorState>(MockEvent.Fail);
+            transitionMapBuilder.RegisterTransition<InactiveState, ActiveState>(MockEvent.Activate);
+            transitionMapBuilder.RegisterTransition<ActiveState, InactiveState>(MockEvent.Deactivate);
+            transitionMapBuilder.RegisterTransition<InactiveState, ErrorState>(MockEvent.Fail);
+            transitionMapBuilder.RegisterTransition<ActiveState, ErrorState>(MockEvent.Fail);
 
             IStateMachine<MockEvent, MockContext> stateMachine;
             var initializeResult = await StateMachine<MockEvent, MockContext>.CreateAsync(
-                transitionMap,
+                transitionMapBuilder.Build(),
                 new MockContext(),
                 CancellationToken.None);
             if (initializeResult is ISuccessResult<StateMachine<MockEvent, MockContext>> initializeSuccess)

@@ -7,7 +7,7 @@ namespace Mochineko.RelentStateMachine
 {
     public sealed class StateMachine<TEvent, TContext> : IStateMachine<TEvent, TContext>
     {
-        private readonly IStateStore<TEvent, TContext> stateStore;
+        private readonly ITransitionMap<TEvent, TContext> transitionMap;
         public TContext Context { get; }
         private IState<TContext> state;
 
@@ -16,12 +16,12 @@ namespace Mochineko.RelentStateMachine
             => state is TState;
 
         public static async UniTask<IResult<StateMachine<TEvent, TContext>>> CreateAsync(
-            IStateStore<TEvent, TContext> stateStore,
+            ITransitionMap<TEvent, TContext> transitionMap,
             TContext context,
             CancellationToken cancellationToken)
         {
             var instance = new StateMachine<TEvent, TContext>(
-                stateStore,
+                transitionMap,
                 context);
 
             var initializeResult = await instance.state
@@ -42,12 +42,12 @@ namespace Mochineko.RelentStateMachine
         }
 
         private StateMachine(
-            IStateStore<TEvent, TContext> stateStore,
+            ITransitionMap<TEvent, TContext> transitionMap,
             TContext context)
         {
-            this.stateStore = stateStore;
+            this.transitionMap = transitionMap;
             this.Context = context;
-            this.state = this.stateStore.InitialState;
+            this.state = this.transitionMap.InitialState;
         }
 
         public async UniTask<IResult> SendEventAsync(
@@ -55,7 +55,7 @@ namespace Mochineko.RelentStateMachine
             CancellationToken cancellationToken)
         {
             IState<TContext> nextState;
-            var transitResult = stateStore.CanTransit(state, @event);
+            var transitResult = transitionMap.CanTransit(state, @event);
             if (transitResult is ISuccessResult<IState<TContext>> transitionSuccess)
             {
                 nextState = transitionSuccess.Result;
@@ -109,7 +109,7 @@ namespace Mochineko.RelentStateMachine
 
         public void Dispose()
         {
-            stateStore.Dispose();
+            transitionMap.Dispose();
         }
     }
 }
