@@ -15,13 +15,16 @@ namespace Mochineko.RelentStateMachine.Tests
         [RequiresPlayMode(false)]
         public async Task Test()
         {
+            // NOTE: Initial state is specified at constructor.
             var transitionMapBuilder = TransitionMapBuilder<MockEvent, MockContext>
                 .Create<InactiveState>();
 
+            // NOTE: Register transitions to builder.
             transitionMapBuilder.RegisterTransition<InactiveState, ActiveState>(MockEvent.Activate);
             transitionMapBuilder.RegisterTransition<ActiveState, InactiveState>(MockEvent.Deactivate);
             transitionMapBuilder.RegisterAnyTransition<ErrorState>(MockEvent.Fail);
 
+            // NOTE: Built transition map is immutable.
             IStateMachine<MockEvent, MockContext> stateMachine;
             var initializeResult = await StateMachine<MockEvent, MockContext>.CreateAsync(
                 transitionMapBuilder.Build(),
@@ -31,13 +34,19 @@ namespace Mochineko.RelentStateMachine.Tests
             {
                 stateMachine = initializeSuccess.Result;
             }
+            else if (initializeResult is IFailureResult<StateMachine<MockEvent, MockContext>> initializeFailure)
+            {
+                throw new System.Exception(
+                    $"Failed to initialize state machine because of {initializeFailure.Message}.");
+            }
             else
             {
-                throw new System.Exception("Failed to initialize state machine.");
+                throw new ResultPatternMatchException(nameof(initializeResult));
             }
 
             // Inactive state ------------------------------------------------------
 
+            // NOTE: Asynchronously created state machine has been already in initial state.
             stateMachine.IsCurrentState<InactiveState>()
                 .Should().BeTrue(
                     because: $"Initial state should be {nameof(InactiveState)}.");
