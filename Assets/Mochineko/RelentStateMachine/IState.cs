@@ -6,10 +6,10 @@ using Mochineko.Relent.Result;
 
 namespace Mochineko.RelentStateMachine
 {
-    public interface IState<in TContext> : IDisposable
+    public interface IState<TEvent, in TContext> : IDisposable
     {
-        UniTask<IResult> EnterAsync(TContext context, CancellationToken cancellationToken);
-        UniTask<IResult> UpdateAsync(TContext context, CancellationToken cancellationToken);
+        UniTask<IResult<IEventRequest<TEvent>>> EnterAsync(TContext context, CancellationToken cancellationToken);
+        UniTask<IResult<IEventRequest<TEvent>>> UpdateAsync(TContext context, CancellationToken cancellationToken);
         UniTask<IResult> ExitAsync(TContext context, CancellationToken cancellationToken);
     }
 }

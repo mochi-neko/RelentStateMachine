@@ -4,9 +4,9 @@ using Mochineko.Relent.Result;
 
 namespace Mochineko.RelentStateMachine
 {
-    public interface ITransitionMap<in TEvent, TContext> : IDisposable
+    public interface ITransitionMap<TEvent, TContext> : IDisposable
     {
-        internal IState<TContext> InitialState { get; }
-        internal IResult<IState<TContext>> CanTransit(IState<TContext> currentState, TEvent @event);
+        internal IState<TEvent, TContext> InitialState { get; }
+        internal IResult<IState<TEvent, TContext>> CanTransit(IState<TEvent, TContext> currentState, TEvent @event);
     }
 }

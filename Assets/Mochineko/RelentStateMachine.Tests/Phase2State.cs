@@ -6,10 +6,10 @@ using Mochineko.Relent.Result;
 
 namespace Mochineko.RelentStateMachine.Tests
 {
-    internal sealed class ActiveState : IState<MockEvent, MockContext>
+    internal sealed class Phase2State : IState<MockContinueEvent, MockContinueContext>
     {
-        async UniTask<IResult<IEventRequest<MockEvent>>> IState<MockEvent, MockContext>.EnterAsync(
-            MockContext context,
+        public async UniTask<IResult<IEventRequest<MockContinueEvent>>> EnterAsync(
+            MockContinueContext context,
             CancellationToken cancellationToken)
         {
             try
@@ -20,15 +20,16 @@ namespace Mochineko.RelentStateMachine.Tests
             }
             catch (OperationCanceledException exception)
             {
-                return StateResultFactory.Fail<MockEvent>(exception.Message);
+                return StateResultFactory.Fail<MockContinueEvent>(exception.Message);
             }
+            
+            context.PhaseCount++;
 
-            context.Active = true;
-
-            return StateResultFactory.Succeed<MockEvent>();
+            return StateResultFactory.SucceedAndRequest(MockContinueEvent.Continue);
         }
 
-        public async UniTask<IResult<IEventRequest<MockEvent>>> UpdateAsync(MockContext context,
+        public async UniTask<IResult<IEventRequest<MockContinueEvent>>> UpdateAsync(
+            MockContinueContext context,
             CancellationToken cancellationToken)
         {
             try
@@ -39,13 +40,15 @@ namespace Mochineko.RelentStateMachine.Tests
             }
             catch (OperationCanceledException exception)
             {
-                return StateResultFactory.Fail<MockEvent>(exception.Message);
+                return StateResultFactory.Fail<MockContinueEvent>(exception.Message);
             }
 
-            return StateResultFactory.Succeed<MockEvent>();
+            return StateResultFactory.Succeed<MockContinueEvent>();
         }
 
-        public async UniTask<IResult> ExitAsync(MockContext context, CancellationToken cancellationToken)
+        public async UniTask<IResult> ExitAsync(
+            MockContinueContext context,
+            CancellationToken cancellationToken)
         {
             try
             {

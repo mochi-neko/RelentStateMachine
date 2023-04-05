@@ -6,9 +6,9 @@ using Mochineko.Relent.Result;
 
 namespace Mochineko.RelentStateMachine.Tests
 {
-    internal sealed class InactiveState : IState<MockContext>
+    internal sealed class InactiveState : IState<MockEvent, MockContext>
     {
-        async UniTask<IResult> IState<MockContext>.EnterAsync(
+        async UniTask<IResult<IEventRequest<MockEvent>>> IState<MockEvent, MockContext>.EnterAsync(
             MockContext context,
             CancellationToken cancellationToken)
         {
@@ -20,15 +20,15 @@ namespace Mochineko.RelentStateMachine.Tests
             }
             catch (OperationCanceledException exception)
             {
-                return ResultFactory.Fail(exception.Message);
+                return StateResultFactory.Fail<MockEvent>(exception.Message);
             }
 
             context.Active = false;
 
-            return ResultFactory.Succeed();
+            return StateResultFactory.Succeed<MockEvent>();
         }
 
-        public async UniTask<IResult> UpdateAsync(MockContext context, CancellationToken cancellationToken)
+        public async UniTask<IResult<IEventRequest<MockEvent>>> UpdateAsync(MockContext context, CancellationToken cancellationToken)
         {
             try
             {
@@ -38,10 +38,10 @@ namespace Mochineko.RelentStateMachine.Tests
             }
             catch (OperationCanceledException exception)
             {
-                return ResultFactory.Fail(exception.Message);
+                return StateResultFactory.Fail<MockEvent>(exception.Message);
             }
 
-            return ResultFactory.Succeed();
+            return StateResultFactory.Succeed<MockEvent>();
         }
 
         public async UniTask<IResult> ExitAsync(MockContext context, CancellationToken cancellationToken)
