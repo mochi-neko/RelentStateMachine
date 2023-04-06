@@ -134,6 +134,7 @@ namespace Mochineko.RelentStateMachine
         private sealed class PopToken : IPopToken
         {
             private readonly StackStateMachine<TContext> publisher;
+            private bool popped = false;
 
             public static IPopToken Publish(StackStateMachine<TContext> publisher)
                 => new PopToken(publisher);
@@ -145,16 +146,23 @@ namespace Mochineko.RelentStateMachine
 
             public async UniTask<IResult> PopAsync(CancellationToken cancellationToken)
             {
+                if (popped)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to pop because of already popped.");
+                }
+                
                 if (publisher.stack.Count is 0)
                 {
-                    return ResultFactory.Fail(
-                        $"Failed to pop and drop because of stack is empty.");
+                    throw new InvalidOperationException(
+                        $"Failed to pop because of stack is empty.");
                 }
 
                 // Make stack thread-safe.
                 try
                 {
-                    await publisher.semaphore.WaitAsync(publisher.semaphoreTimeout, cancellationToken);
+                    await publisher.semaphore
+                        .WaitAsync(publisher.semaphoreTimeout, cancellationToken);
                 }
                 catch (OperationCanceledException exception)
                 {
@@ -163,8 +171,11 @@ namespace Mochineko.RelentStateMachine
                         $"Cancelled to wait semaphore because of {exception}.");
                 }
 
+                popped = true;
+                
                 var currentState = publisher.stack.Peek();
-                var exitResult = await currentState.ExitAsync(publisher.Context, cancellationToken);
+                var exitResult = await currentState
+                    .ExitAsync(publisher.Context, cancellationToken);
                 try
                 {
                     switch (exitResult)
