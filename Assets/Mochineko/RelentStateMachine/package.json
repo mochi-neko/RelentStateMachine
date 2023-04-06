@@ -1,0 +1,11 @@
+{
+  "name": "com.mochineko.relent-state-machine",
+  "version": "0.1.0",
+  "displayName": "Relent State Machine",
+  "description": "An asynchronous finite state machine.",
+  "unity": "2021.3",
+  "author": {
+    "name": "Mochineko",
+    "email": "t.o.e.4315@gmail.com"
+  }
+}
