@@ -6,7 +6,7 @@ using Mochineko.Relent.Result;
 
 namespace Mochineko.RelentStateMachine
 {
-    public interface IStateMachine<TEvent, out TContext> : IDisposable
+    public interface IFiniteStateMachine<TEvent, out TContext> : IDisposable
     {
         TContext Context { get; }
         bool IsCurrentState<TState>() where TState : IState<TEvent, TContext>;

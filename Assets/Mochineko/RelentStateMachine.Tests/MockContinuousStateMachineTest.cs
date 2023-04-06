@@ -26,16 +26,16 @@ namespace Mochineko.RelentStateMachine.Tests
             transitionMapBuilder.RegisterTransition<Phase3State, Phase4State>(MockContinueEvent.Continue);
             transitionMapBuilder.RegisterTransition<Phase4State, FinishState>(MockContinueEvent.Stop);
             
-            IStateMachine<MockContinueEvent, MockContinueContext> stateMachine;
-            var initializeResult = await StateMachine<MockContinueEvent, MockContinueContext>.CreateAsync(
+            IFiniteStateMachine<MockContinueEvent, MockContinueContext> stateMachine;
+            var initializeResult = await FiniteStateMachine<MockContinueEvent, MockContinueContext>.CreateAsync(
                 transitionMapBuilder.Build(),
                 new MockContinueContext(),
                 CancellationToken.None);
-            if (initializeResult is ISuccessResult<StateMachine<MockContinueEvent, MockContinueContext>> initializeSuccess)
+            if (initializeResult is ISuccessResult<FiniteStateMachine<MockContinueEvent, MockContinueContext>> initializeSuccess)
             {
                 stateMachine = initializeSuccess.Result;
             }
-            else if (initializeResult is IFailureResult<StateMachine<MockContinueEvent, MockContinueContext>> initializeFailure)
+            else if (initializeResult is IFailureResult<FiniteStateMachine<MockContinueEvent, MockContinueContext>> initializeFailure)
             {
                 throw new System.Exception(
                     $"Failed to initialize state machine because of {initializeFailure.Message}.");

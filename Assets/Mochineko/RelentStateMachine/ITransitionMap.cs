@@ -7,6 +7,6 @@ namespace Mochineko.RelentStateMachine
     public interface ITransitionMap<TEvent, TContext> : IDisposable
     {
         internal IState<TEvent, TContext> InitialState { get; }
-        internal IResult<IState<TEvent, TContext>> CanTransit(IState<TEvent, TContext> currentState, TEvent @event);
+        internal IResult<IState<TEvent, TContext>> AllowedToTransit(IState<TEvent, TContext> currentState, TEvent @event);
     }
 }

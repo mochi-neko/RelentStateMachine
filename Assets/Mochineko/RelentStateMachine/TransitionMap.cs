@@ -36,7 +36,7 @@ namespace Mochineko.RelentStateMachine
         IState<TEvent, TContext> ITransitionMap<TEvent, TContext>.InitialState
             => initialState;
 
-        IResult<IState<TEvent, TContext>> ITransitionMap<TEvent, TContext>.CanTransit(
+        IResult<IState<TEvent, TContext>> ITransitionMap<TEvent, TContext>.AllowedToTransit(
             IState<TEvent, TContext> currentState,
             TEvent @event)
         {

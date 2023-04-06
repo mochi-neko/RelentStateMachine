@@ -27,16 +27,16 @@ namespace Mochineko.RelentStateMachine.Tests
             transitionMapBuilder.RegisterAnyTransition<ErrorState>(MockEvent.Fail);
 
             // NOTE: Built transition map is immutable.
-            IStateMachine<MockEvent, MockContext> stateMachine;
-            var initializeResult = await StateMachine<MockEvent, MockContext>.CreateAsync(
+            IFiniteStateMachine<MockEvent, MockContext> stateMachine;
+            var initializeResult = await FiniteStateMachine<MockEvent, MockContext>.CreateAsync(
                 transitionMapBuilder.Build(),
                 new MockContext(),
                 CancellationToken.None);
-            if (initializeResult is ISuccessResult<StateMachine<MockEvent, MockContext>> initializeSuccess)
+            if (initializeResult is ISuccessResult<FiniteStateMachine<MockEvent, MockContext>> initializeSuccess)
             {
                 stateMachine = initializeSuccess.Result;
             }
-            else if (initializeResult is IFailureResult<StateMachine<MockEvent, MockContext>> initializeFailure)
+            else if (initializeResult is IFailureResult<FiniteStateMachine<MockEvent, MockContext>> initializeFailure)
             {
                 throw new System.Exception(
                     $"Failed to initialize state machine because of {initializeFailure.Message}.");
@@ -154,16 +154,16 @@ namespace Mochineko.RelentStateMachine.Tests
             transitionMapBuilder.RegisterTransition<ActiveState, InactiveState>(MockEvent.Deactivate);
             transitionMapBuilder.RegisterAnyTransition<ErrorState>(MockEvent.Fail);
 
-            IStateMachine<MockEvent, MockContext> stateMachine;
-            var initializeResult = await StateMachine<MockEvent, MockContext>.CreateAsync(
+            IFiniteStateMachine<MockEvent, MockContext> stateMachine;
+            var initializeResult = await FiniteStateMachine<MockEvent, MockContext>.CreateAsync(
                 transitionMapBuilder.Build(),
                 new MockContext(),
                 CancellationToken.None);
-            if (initializeResult is ISuccessResult<StateMachine<MockEvent, MockContext>> initializeSuccess)
+            if (initializeResult is ISuccessResult<FiniteStateMachine<MockEvent, MockContext>> initializeSuccess)
             {
                 stateMachine = initializeSuccess.Result;
             }
-            else if (initializeResult is IFailureResult<StateMachine<MockEvent, MockContext>> initializeFailure)
+            else if (initializeResult is IFailureResult<FiniteStateMachine<MockEvent, MockContext>> initializeFailure)
             {
                 throw new System.Exception(
                     $"Failed to initialize state machine because of {initializeFailure.Message}.");

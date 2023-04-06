@@ -8,7 +8,7 @@ namespace Mochineko.RelentStateMachine.Tests
 {
     internal sealed class MockStateMachineController : MonoBehaviour
     {
-        private StateMachine<MockEvent, MockContext>? stateMachine;
+        private FiniteStateMachine<MockEvent, MockContext>? stateMachine;
 
         private async void Awake()
         {
@@ -20,11 +20,11 @@ namespace Mochineko.RelentStateMachine.Tests
             transitionMapBuilder.RegisterTransition<InactiveState, ErrorState>(MockEvent.Fail);
             transitionMapBuilder.RegisterTransition<ActiveState, ErrorState>(MockEvent.Fail);
 
-            var initializeResult = await StateMachine<MockEvent, MockContext>.CreateAsync(
+            var initializeResult = await FiniteStateMachine<MockEvent, MockContext>.CreateAsync(
                 transitionMapBuilder.Build(),
                 new MockContext(),
                 this.GetCancellationTokenOnDestroy());
-            if (initializeResult is ISuccessResult<StateMachine<MockEvent, MockContext>> initializeSuccess)
+            if (initializeResult is ISuccessResult<FiniteStateMachine<MockEvent, MockContext>> initializeSuccess)
             {
                 stateMachine = initializeSuccess.Result;
             }
