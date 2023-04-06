@@ -11,7 +11,7 @@ using UnityEngine.TestTools;
 namespace Mochineko.RelentStateMachine.Tests
 {
     [TestFixture]
-    internal sealed class MockStateMachineTest
+    internal sealed class FiniteStateMachineTest
     {
         [Test]
         [RequiresPlayMode(false)]
@@ -45,6 +45,8 @@ namespace Mochineko.RelentStateMachine.Tests
             {
                 throw new ResultPatternMatchException(nameof(initializeResult));
             }
+
+            using var _ = stateMachine; 
 
             // Inactive state ------------------------------------------------------
 
@@ -172,6 +174,8 @@ namespace Mochineko.RelentStateMachine.Tests
             {
                 throw new ResultPatternMatchException(nameof(initializeResult));
             }
+            
+            using var dispose = stateMachine; 
 
 #pragma warning disable CS4014
             var firstTask = Task.Run(async () =>

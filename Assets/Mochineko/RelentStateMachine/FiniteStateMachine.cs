@@ -17,7 +17,7 @@ namespace Mochineko.RelentStateMachine
             where TState : IState<TEvent, TContext>
             => currentState is TState;
 
-        private readonly SemaphoreSlim semaphoreSlim = new(
+        private readonly SemaphoreSlim semaphore = new(
             initialCount: 1,
             maxCount: 1);
 
@@ -37,40 +37,36 @@ namespace Mochineko.RelentStateMachine
 
             var initializeResult = await instance.currentState
                 .EnterAsync(context, cancellationToken);
-            if (initializeResult is ISuccessResult<IEventRequest<TEvent>> initializeSuccess)
+            switch (initializeResult)
             {
                 // Chains immediate event sending.
-                if (initializeSuccess.Result is ISomeEventRequest<TEvent> eventRequest)
+                case ISuccessResult<IEventRequest<TEvent>> initializeSuccess
+                    when initializeSuccess.Result is ISomeEventRequest<TEvent> eventRequest:
                 {
                     var sendEventResult = await instance
                         .SendEventAsync(eventRequest.Event, cancellationToken);
-                    if (sendEventResult.Success)
+                    return sendEventResult switch
                     {
-                        return ResultFactory.Succeed(instance);
-                    }
-                    else if (sendEventResult is IFailureResult sendEventFailure)
-                    {
-                        return ResultFactory.Fail<FiniteStateMachine<TEvent, TContext>>(
-                            $"Failed to send event at initialization because of {sendEventFailure.Message}.");
-                    }
-                    else
-                    {
-                        throw new ResultPatternMatchException(nameof(sendEventResult));
-                    }
+                        ISuccessResult
+                            => ResultFactory.Succeed(instance),
+
+                        IFailureResult sendEventFailure
+                            => ResultFactory.Fail<FiniteStateMachine<TEvent, TContext>>(
+                                $"Failed to send event at initialization because of {sendEventFailure.Message}."),
+
+                        _ => throw new ResultPatternMatchException(nameof(sendEventResult))
+                    };
                 }
-                else
-                {
+
+                case ISuccessResult<IEventRequest<TEvent>> initializeSuccess:
                     return ResultFactory.Succeed(instance);
-                }
-            }
-            else if (initializeResult is IFailureResult<IEventRequest<TEvent>> initializeFailure)
-            {
-                return ResultFactory.Fail<FiniteStateMachine<TEvent, TContext>>(
-                    $"Failed to enter initial state because of {initializeFailure.Message}.");
-            }
-            else
-            {
-                throw new ResultPatternMatchException(nameof(initializeResult));
+
+                case IFailureResult<IEventRequest<TEvent>> initializeFailure:
+                    return ResultFactory.Fail<FiniteStateMachine<TEvent, TContext>>(
+                        $"Failed to enter initial state because of {initializeFailure.Message}.");
+
+                default:
+                    throw new ResultPatternMatchException(nameof(initializeResult));
             }
         }
 
@@ -87,6 +83,12 @@ namespace Mochineko.RelentStateMachine
                 semaphoreTimeout
                 ?? TimeSpan.FromSeconds(DefaultSemaphoreTimeoutSeconds);
         }
+        
+        public void Dispose()
+        {
+            transitionMap.Dispose();
+            semaphore.Dispose();
+        }
 
         public async UniTask<IResult> SendEventAsync(
             TEvent @event,
@@ -95,126 +97,108 @@ namespace Mochineko.RelentStateMachine
             // Check transition.
             IState<TEvent, TContext> nextState;
             var transitionCheckResult = transitionMap.AllowedToTransit(currentState, @event);
-            if (transitionCheckResult is ISuccessResult<IState<TEvent, TContext>> transitionSuccess)
+            switch (transitionCheckResult)
             {
-                nextState = transitionSuccess.Result;
-            }
-            else if (transitionCheckResult is IFailureResult<IState<TEvent, TContext>> transitionFailure)
-            {
-                return ResultFactory.Fail(
-                    $"Failed to transit state because of {transitionFailure.Message}.");
-            }
-            else
-            {
-                throw new ResultPatternMatchException(nameof(transitionCheckResult));
-            }
-            
-            // Restrict to one event at a time.
-            try
-            {
-                await semaphoreSlim.WaitAsync(semaphoreTimeout, cancellationToken);
-            }
-            catch (OperationCanceledException exception)
-            {
-                semaphoreSlim.Release();
-                return ResultFactory.Fail(
-                    $"Cancelled to send event because of {exception}.");
+                case ISuccessResult<IState<TEvent, TContext>> transitionSuccess:
+                    nextState = transitionSuccess.Result;
+                    break;
+
+                case IFailureResult<IState<TEvent, TContext>> transitionFailure:
+                    return ResultFactory.Fail(
+                        $"Failed to transit state because of {transitionFailure.Message}.");
+
+                default:
+                    throw new ResultPatternMatchException(nameof(transitionCheckResult));
             }
 
-            TEvent continueEvent;
-            try
+            var transitResult = await TransitAsync(nextState, cancellationToken);
+            switch (transitResult)
             {
-                var transitResult = await TransitAsync(nextState, cancellationToken);
-                switch (transitResult)
-                {
-                    case ISuccessResult<IEventRequest<TEvent>> successResult:
-                        if (successResult.Result is ISomeEventRequest<TEvent> eventRequest)
-                        {
-                            continueEvent = eventRequest.Event;
-                            break;
-                        }
-                        else
-                        {
-                            return ResultFactory.Succeed();
-                        }
+                case ISuccessResult<IEventRequest<TEvent>> successResult
+                    when successResult.Result is ISomeEventRequest<TEvent> eventRequest:
+                    // NOTE: Recursive calling.
+                    return await SendEventAsync(eventRequest.Event, cancellationToken);
 
-                    case IFailureResult<IEventRequest<TEvent>> failureResult:
-                        return ResultFactory.Fail(
-                            $"Failed to transit state from {currentState.GetType()} to {nextState.GetType()} because of {failureResult.Message}.");
-                    
-                    default:
-                        throw new ResultPatternMatchException(nameof(transitResult));
-                }
-            }
-            finally
-            {
-                semaphoreSlim.Release();
-            }
+                case ISuccessResult<IEventRequest<TEvent>> successResult:
+                    return ResultFactory.Succeed();
 
-            // NOTE: Recursive calling.
-            return await SendEventAsync(continueEvent, cancellationToken);
+                case IFailureResult<IEventRequest<TEvent>> failureResult:
+                    return ResultFactory.Fail(
+                        $"Failed to transit state from {currentState.GetType()} to {nextState.GetType()} because of {failureResult.Message}.");
+
+                default:
+                    throw new ResultPatternMatchException(nameof(transitResult));
+            }
         }
 
         private async UniTask<IResult<IEventRequest<TEvent>>> TransitAsync(
             IState<TEvent, TContext> nextState,
             CancellationToken cancellationToken)
         {
-            // Exit current state.
-            var exitResult = await currentState.ExitAsync(Context, cancellationToken);
-            if (exitResult is IFailureResult exitFailure)
+            // Make state thread-safe.
+            try
             {
+                await semaphore.WaitAsync(semaphoreTimeout, cancellationToken);
+            }
+            catch (OperationCanceledException exception)
+            {
+                semaphore.Release();
                 return StateResultFactory.Fail<TEvent>(
-                    $"Failed to exit current state:{currentState.GetType()} because of {exitFailure.Message}.");
+                    $"Cancelled to wait semaphore because of {exception}.");
             }
 
-            // Enter next state.
-            var enterResult = await nextState.EnterAsync(Context, cancellationToken);
-            if (enterResult is ISuccessResult<IEventRequest<TEvent>> enterSuccess)
+            try
             {
-                currentState = nextState;
-                return ResultFactory.Succeed(enterSuccess.Result);
+                // Exit current state.
+                var exitResult = await currentState.ExitAsync(Context, cancellationToken);
+                if (exitResult is IFailureResult exitFailure)
+                {
+                    return StateResultFactory.Fail<TEvent>(
+                        $"Failed to exit current state:{currentState.GetType()} because of {exitFailure.Message}.");
+                }
+
+                // Enter next state.
+                var enterResult = await nextState.EnterAsync(Context, cancellationToken);
+                switch (enterResult)
+                {
+                    case ISuccessResult<IEventRequest<TEvent>> enterSuccess:
+                        currentState = nextState;
+                        return ResultFactory.Succeed(enterSuccess.Result);
+
+                    case IFailureResult<IEventRequest<TEvent>> enterFailure:
+                        return StateResultFactory.Fail<TEvent>(
+                            $"Failed to enter state:{nextState.GetType()} because of {enterFailure.Message}.");
+
+                    default:
+                        throw new ResultPatternMatchException(nameof(enterResult));
+                }
             }
-            else if (enterResult is IFailureResult<IEventRequest<TEvent>> enterFailure)
+            finally
             {
-                return StateResultFactory.Fail<TEvent>(
-                    $"Failed to enter state:{nextState.GetType()} because of {enterFailure.Message}.");
-            }
-            else
-            {
-                throw new ResultPatternMatchException(nameof(enterResult));
+                semaphore.Release();
             }
         }
 
         public async UniTask<IResult> UpdateAsync(CancellationToken cancellationToken)
         {
             var updateResult = await currentState.UpdateAsync(Context, cancellationToken);
-            if (updateResult is ISuccessResult<IEventRequest<TEvent>> updateSuccess)
+            switch (updateResult)
             {
-                if (updateSuccess.Result is ISomeEventRequest<TEvent> eventRequest)
-                {
+                case ISuccessResult<IEventRequest<TEvent>> updateSuccess
+                    when updateSuccess.Result is ISomeEventRequest<TEvent> eventRequest:
                     // NOTE: Can be recursive calling.
                     return await SendEventAsync(eventRequest.Event, cancellationToken);
-                }
-                else
-                {
-                    return ResultFactory.Succeed();
-                }
-            }
-            else if (updateResult is IFailureResult<IEventRequest<TEvent>> updateFailure)
-            {
-                return ResultFactory.Fail(
-                    $"Failed to update current state:{currentState.GetType()} because of {updateFailure.Message}.");
-            }
-            else
-            {
-                throw new ResultPatternMatchException(nameof(updateResult));
-            }
-        }
 
-        public void Dispose()
-        {
-            transitionMap.Dispose();
-            semaphoreSlim.Dispose();
+                case ISuccessResult<IEventRequest<TEvent>> updateSuccess:
+                    return ResultFactory.Succeed();
+
+                case IFailureResult<IEventRequest<TEvent>> updateFailure:
+                    return ResultFactory.Fail(
+                        $"Failed to update current state:{currentState.GetType()} because of {updateFailure.Message}.");
+
+                default:
+                    throw new ResultPatternMatchException(nameof(updateResult));
+            }
         }
     }
 }
