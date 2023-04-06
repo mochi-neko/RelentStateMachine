@@ -15,6 +15,11 @@ An asynchronous based finite state machine for Unity.
 - Do not depend on `MonoBehaviour` (UnityEngine)
 - Interface based abstractions
 
+## Available State Machine
+
+- Finite State Machine
+- Stack Based State Machine
+
 ## How to import by Unity Package Manager
 
 ```json
