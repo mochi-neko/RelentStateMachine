@@ -1,6 +1,6 @@
 # RelentStateMachine
 
-An asynchronous based finite state machine for Unity.
+An asynchronous-based finite state machine for Unity.
 
 ## Features
 
@@ -13,7 +13,7 @@ An asynchronous based finite state machine for Unity.
 - Handles errors explicitly without exceptions
 - Immutable state transitions at runtime
 - Do not depend on `MonoBehaviour` (UnityEngine)
-- Interface based abstractions
+- Interface-based abstractions
 
 ## Available State Machine
 
