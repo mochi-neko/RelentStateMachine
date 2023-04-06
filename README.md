@@ -4,7 +4,7 @@ An asynchronous-based finite state machine for Unity.
 
 ## Features
 
-- Asynchronous based ([UniTask](https://github.com/Cysharp/UniTask) based) operations
+- Asynchronous-based ([UniTask](https://github.com/Cysharp/UniTask) based) operations
 - Thread-safe
 - Null-safe
 - Type-safe states
