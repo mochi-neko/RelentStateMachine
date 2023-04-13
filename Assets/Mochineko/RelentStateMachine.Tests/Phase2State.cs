@@ -20,12 +20,12 @@ namespace Mochineko.RelentStateMachine.Tests
             }
             catch (OperationCanceledException exception)
             {
-                return StateResultFactory.Fail<MockContinueEvent>(exception.Message);
+                return StateResults.Fail<MockContinueEvent>(exception.Message);
             }
             
             context.PhaseCount++;
 
-            return StateResultFactory.SucceedAndRequest(MockContinueEvent.Continue);
+            return StateResults.SucceedAndRequest(MockContinueEvent.Continue);
         }
 
         public async UniTask<IResult<IEventRequest<MockContinueEvent>>> UpdateAsync(
@@ -40,10 +40,10 @@ namespace Mochineko.RelentStateMachine.Tests
             }
             catch (OperationCanceledException exception)
             {
-                return StateResultFactory.Fail<MockContinueEvent>(exception.Message);
+                return StateResults.Fail<MockContinueEvent>(exception.Message);
             }
 
-            return StateResultFactory.Succeed<MockContinueEvent>();
+            return StateResults.Succeed<MockContinueEvent>();
         }
 
         public async UniTask<IResult> ExitAsync(
@@ -58,10 +58,10 @@ namespace Mochineko.RelentStateMachine.Tests
             }
             catch (OperationCanceledException exception)
             {
-                return ResultFactory.Fail(exception.Message);
+                return Results.Fail(exception.Message);
             }
 
-            return ResultFactory.Succeed();
+            return Results.Succeed();
         }
 
         public void Dispose()

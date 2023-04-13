@@ -48,10 +48,10 @@ namespace Mochineko.RelentStateMachine
                     return sendEventResult switch
                     {
                         ISuccessResult
-                            => ResultFactory.Succeed(instance),
+                            => Results.Succeed(instance),
 
                         IFailureResult sendEventFailure
-                            => ResultFactory.Fail<FiniteStateMachine<TEvent, TContext>>(
+                            => Results.Fail<FiniteStateMachine<TEvent, TContext>>(
                                 $"Failed to send event at initialization because of {sendEventFailure.Message}."),
 
                         _ => throw new ResultPatternMatchException(nameof(sendEventResult))
@@ -59,10 +59,10 @@ namespace Mochineko.RelentStateMachine
                 }
 
                 case ISuccessResult<IEventRequest<TEvent>> initializeSuccess:
-                    return ResultFactory.Succeed(instance);
+                    return Results.Succeed(instance);
 
                 case IFailureResult<IEventRequest<TEvent>> initializeFailure:
-                    return ResultFactory.Fail<FiniteStateMachine<TEvent, TContext>>(
+                    return Results.Fail<FiniteStateMachine<TEvent, TContext>>(
                         $"Failed to enter initial state because of {initializeFailure.Message}.");
 
                 default:
@@ -104,7 +104,7 @@ namespace Mochineko.RelentStateMachine
                     break;
 
                 case IFailureResult<IState<TEvent, TContext>> transitionFailure:
-                    return ResultFactory.Fail(
+                    return Results.Fail(
                         $"Failed to transit state because of {transitionFailure.Message}.");
 
                 default:
@@ -120,10 +120,10 @@ namespace Mochineko.RelentStateMachine
                     return await SendEventAsync(eventRequest.Event, cancellationToken);
 
                 case ISuccessResult<IEventRequest<TEvent>> successResult:
-                    return ResultFactory.Succeed();
+                    return Results.Succeed();
 
                 case IFailureResult<IEventRequest<TEvent>> failureResult:
-                    return ResultFactory.Fail(
+                    return Results.Fail(
                         $"Failed to transit state from {currentState.GetType()} to {nextState.GetType()} because of {failureResult.Message}.");
 
                 default:
@@ -143,7 +143,7 @@ namespace Mochineko.RelentStateMachine
             catch (OperationCanceledException exception)
             {
                 semaphore.Release();
-                return StateResultFactory.Fail<TEvent>(
+                return StateResults.Fail<TEvent>(
                     $"Cancelled to wait semaphore because of {exception}.");
             }
 
@@ -153,7 +153,7 @@ namespace Mochineko.RelentStateMachine
                 var exitResult = await currentState.ExitAsync(Context, cancellationToken);
                 if (exitResult is IFailureResult exitFailure)
                 {
-                    return StateResultFactory.Fail<TEvent>(
+                    return StateResults.Fail<TEvent>(
                         $"Failed to exit current state:{currentState.GetType()} because of {exitFailure.Message}.");
                 }
 
@@ -163,10 +163,10 @@ namespace Mochineko.RelentStateMachine
                 {
                     case ISuccessResult<IEventRequest<TEvent>> enterSuccess:
                         currentState = nextState;
-                        return ResultFactory.Succeed(enterSuccess.Result);
+                        return Results.Succeed(enterSuccess.Result);
 
                     case IFailureResult<IEventRequest<TEvent>> enterFailure:
-                        return StateResultFactory.Fail<TEvent>(
+                        return StateResults.Fail<TEvent>(
                             $"Failed to enter state:{nextState.GetType()} because of {enterFailure.Message}.");
 
                     default:
@@ -190,10 +190,10 @@ namespace Mochineko.RelentStateMachine
                     return await SendEventAsync(eventRequest.Event, cancellationToken);
 
                 case ISuccessResult<IEventRequest<TEvent>> updateSuccess:
-                    return ResultFactory.Succeed();
+                    return Results.Succeed();
 
                 case IFailureResult<IEventRequest<TEvent>> updateFailure:
-                    return ResultFactory.Fail(
+                    return Results.Fail(
                         $"Failed to update current state:{currentState.GetType()} because of {updateFailure.Message}.");
 
                 default:

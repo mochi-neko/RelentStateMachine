@@ -1,6 +1,6 @@
 {
   "name": "com.mochineko.relent-state-machine",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "displayName": "Relent State Machine",
   "description": "An asynchronous finite state machine.",
   "unity": "2021.3",

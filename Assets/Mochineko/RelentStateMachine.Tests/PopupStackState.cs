@@ -14,17 +14,17 @@ namespace Mochineko.RelentStateMachine.Tests
 
         public async UniTask<IResult> EnterAsync(MockStackContext context, CancellationToken cancellationToken)
         {
-            return ResultFactory.Succeed();
+            return Results.Succeed();
         }
 
         public async UniTask<IResult> UpdateAsync(MockStackContext context, CancellationToken cancellationToken)
         {
-            return ResultFactory.Succeed();
+            return Results.Succeed();
         }
 
         public async UniTask<IResult> ExitAsync(MockStackContext context, CancellationToken cancellationToken)
         {
-            return ResultFactory.Succeed();
+            return Results.Succeed();
         }
     }
 }

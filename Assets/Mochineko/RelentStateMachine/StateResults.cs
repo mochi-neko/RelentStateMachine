@@ -3,15 +3,15 @@ using Mochineko.Relent.Result;
 
 namespace Mochineko.RelentStateMachine
 {
-    public static class StateResultFactory
+    public static class StateResults
     {
         public static ISuccessResult<IEventRequest<TEvent>> Succeed<TEvent>()
-            => ResultFactory.Succeed(EventRequestFactory.None<TEvent>());
+            => Results.Succeed(EventRequests.None<TEvent>());
      
         public static ISuccessResult<IEventRequest<TEvent>> SucceedAndRequest<TEvent>(TEvent @event)
-            => ResultFactory.Succeed(EventRequestFactory.Request(@event));
+            => Results.Succeed(EventRequests.Request(@event));
         
         public static IFailureResult<IEventRequest<TEvent>> Fail<TEvent>(string message)
-            => ResultFactory.Fail<IEventRequest<TEvent>>(message);
+            => Results.FailWithTrace<IEventRequest<TEvent>>(message);
     }
 }

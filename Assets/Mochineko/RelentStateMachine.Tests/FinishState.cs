@@ -15,21 +15,21 @@ namespace Mochineko.RelentStateMachine.Tests
         {
             context.Finished = true;
             
-            return StateResultFactory.Succeed<MockContinueEvent>();
+            return StateResults.Succeed<MockContinueEvent>();
         }
 
         public async UniTask<IResult<IEventRequest<MockContinueEvent>>> UpdateAsync(
             MockContinueContext context,
             CancellationToken cancellationToken)
         {
-            return StateResultFactory.Succeed<MockContinueEvent>();
+            return StateResults.Succeed<MockContinueEvent>();
         }
 
         public async UniTask<IResult> ExitAsync(
             MockContinueContext context,
             CancellationToken cancellationToken)
         {
-            return ResultFactory.Succeed();
+            return Results.Succeed();
         }
 
         public void Dispose()

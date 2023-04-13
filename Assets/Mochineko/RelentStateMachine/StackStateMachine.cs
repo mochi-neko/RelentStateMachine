@@ -41,10 +41,10 @@ namespace Mochineko.RelentStateMachine
             switch (initializeResult)
             {
                 case ISuccessResult:
-                    return ResultFactory.Succeed(instance);
+                    return Results.Succeed(instance);
 
                 case IFailureResult initializeFailure:
-                    return ResultFactory.Fail<StackStateMachine<TContext>>(
+                    return Results.Fail<StackStateMachine<TContext>>(
                         $"Failed to enter initial state because of {initializeFailure.Message}.");
 
                 default:
@@ -85,7 +85,7 @@ namespace Mochineko.RelentStateMachine
             catch (OperationCanceledException exception)
             {
                 semaphore.Release();
-                return ResultFactory.Fail<IPopToken>(
+                return Results.Fail<IPopToken>(
                     $"Cancelled to wait semaphore because of {exception}.");
             }
 
@@ -97,10 +97,10 @@ namespace Mochineko.RelentStateMachine
                 {
                     case ISuccessResult:
                         stack.Push(nextState);
-                        return ResultFactory.Succeed(PopToken.Publish(this));
+                        return Results.Succeed(PopToken.Publish(this));
 
                     case IFailureResult enterFailure:
-                        return ResultFactory.Fail<IPopToken>(
+                        return Results.Fail<IPopToken>(
                             $"Failed to enter state:{nextState.GetType()} because of {enterFailure.Message}.");
 
                     default:
@@ -120,10 +120,10 @@ namespace Mochineko.RelentStateMachine
             switch (updateResult)
             {
                 case ISuccessResult:
-                    return ResultFactory.Succeed();
+                    return Results.Succeed();
 
                 case IFailureResult updateFailure:
-                    return ResultFactory.Fail(
+                    return Results.Fail(
                         $"Failed to update current state:{currentState.GetType()} because of {updateFailure.Message}.");
 
                 default:
@@ -167,7 +167,7 @@ namespace Mochineko.RelentStateMachine
                 catch (OperationCanceledException exception)
                 {
                     publisher.semaphore.Release();
-                    return ResultFactory.Fail(
+                    return Results.Fail(
                         $"Cancelled to wait semaphore because of {exception}.");
                 }
 
@@ -182,10 +182,10 @@ namespace Mochineko.RelentStateMachine
                     {
                         case ISuccessResult:
                             _ = publisher.stack.Pop();
-                            return ResultFactory.Succeed();
+                            return Results.Succeed();
 
                         case IFailureResult updateFailure:
-                            return ResultFactory.Fail(
+                            return Results.Fail(
                                 $"Failed to exit current state:{currentState.GetType()} because of {updateFailure.Message}.");
 
                         default:

@@ -26,26 +26,12 @@ namespace Mochineko.RelentStateMachine.Tests
             stateStore.Register<FirstStackState>();
 
             // NOTE: Built store is immutable.
-            IStackStateMachine<MockStackContext> stateMachine;
-            var initializeResult = await StackStateMachine<MockStackContext>.CreateAsync(
-                stateStore.Build(),
-                new MockStackContext(),
-                CancellationToken.None);
-            if (initializeResult is ISuccessResult<StackStateMachine<MockStackContext>> initializeSuccess)
-            {
-                stateMachine = initializeSuccess.Result;
-            }
-            else if (initializeResult is IFailureResult<StackStateMachine<MockStackContext>> initializeFailure)
-            {
-                throw new System.Exception(
-                    $"Failed to initialize stack state machine because of {initializeFailure.Message}.");
-            }
-            else
-            {
-                throw new ResultPatternMatchException(nameof(initializeResult));
-            }
-
-            using var _ = stateMachine;
+            using var stateMachine =
+                (await StackStateMachine<MockStackContext>.CreateAsync(
+                    stateStore.Build(),
+                    new MockStackContext(),
+                    CancellationToken.None))
+                .Unwrap();
 
             // [Base state] ------------------------------------------------------
 
@@ -56,7 +42,7 @@ namespace Mochineko.RelentStateMachine.Tests
 
             stateMachine.Context.PopTokenStack.Count
                 .Should().Be(0);
-            
+
             await stateMachine.UpdateAsync(CancellationToken.None);
 
             // [Popup] ------------------------------------------------------
@@ -75,10 +61,10 @@ namespace Mochineko.RelentStateMachine.Tests
             {
                 Assert.Fail();
             }
-            
+
             stateMachine.IsCurrentState<PopupStackState>()
                 .Should().BeTrue();
-            
+
             stateMachine.Context.PopTokenStack.Count
                 .Should().Be(1);
 
@@ -101,15 +87,15 @@ namespace Mochineko.RelentStateMachine.Tests
             {
                 Assert.Fail();
             }
-            
+
             stateMachine.IsCurrentState<OverlayStackState>()
                 .Should().BeTrue();
-            
+
             stateMachine.Context.PopTokenStack.Count
                 .Should().Be(2);
 
             await stateMachine.UpdateAsync(CancellationToken.None);
-            
+
             // [Popup] ------------------------------------------------------
             // [Overlay] ------------------------------------------------------
             // [Popup] ------------------------------------------------------
@@ -128,46 +114,46 @@ namespace Mochineko.RelentStateMachine.Tests
             {
                 Assert.Fail();
             }
-            
+
             stateMachine.IsCurrentState<FirstStackState>()
                 .Should().BeTrue();
-            
+
             stateMachine.Context.PopTokenStack.Count
                 .Should().Be(3);
 
             await stateMachine.UpdateAsync(CancellationToken.None);
-            
+
             // [Overlay] ------------------------------------------------------
             // [Popup] ------------------------------------------------------
             // [Base] ------------------------------------------------------
-            
+
             var firstPopToken = stateMachine.Context.PopTokenStack.Pop();
             await firstPopToken.PopAsync(CancellationToken.None);
-            
+
             stateMachine.IsCurrentState<OverlayStackState>()
                 .Should().BeTrue();
-            
+
             stateMachine.Context.PopTokenStack.Count
                 .Should().Be(2);
-            
+
             await stateMachine.UpdateAsync(CancellationToken.None);
-            
+
             // [Popup] ------------------------------------------------------
             // [Base] ------------------------------------------------------
-            
+
             var overlayPopToken = stateMachine.Context.PopTokenStack.Pop();
             await overlayPopToken.PopAsync(CancellationToken.None);
-            
+
             stateMachine.IsCurrentState<PopupStackState>()
                 .Should().BeTrue();
-            
+
             stateMachine.Context.PopTokenStack.Count
                 .Should().Be(1);
-            
+
             // [First] ------------------------------------------------------
             // [Popup] ------------------------------------------------------
             // [Base] ------------------------------------------------------
-            
+
             pushResult = await stateMachine
                 .PushAsync<FirstStackState>(CancellationToken.None);
             pushResult.Success
@@ -181,23 +167,23 @@ namespace Mochineko.RelentStateMachine.Tests
             {
                 Assert.Fail();
             }
-            
+
             stateMachine.IsCurrentState<FirstStackState>()
                 .Should().BeTrue();
-            
+
             stateMachine.Context.PopTokenStack.Count
                 .Should().Be(2);
-            
+
             // [Base] ------------------------------------------------------
 
             while (stateMachine.Context.PopTokenStack.TryPop(out var popToken))
             {
                 await popToken.PopAsync(CancellationToken.None);
             }
-            
+
             stateMachine.IsCurrentState<BaseStackState>()
                 .Should().BeTrue();
-            
+
             stateMachine.Context.PopTokenStack.Count
                 .Should().Be(0);
         }
@@ -262,26 +248,12 @@ namespace Mochineko.RelentStateMachine.Tests
             stateStore.Register<OverlayStackState>();
             stateStore.Register<FirstStackState>();
 
-            IStackStateMachine<MockStackContext> stateMachine;
-            var initializeResult = await StackStateMachine<MockStackContext>.CreateAsync(
-                stateStore.Build(),
-                new MockStackContext(),
-                CancellationToken.None);
-            if (initializeResult is ISuccessResult<StackStateMachine<MockStackContext>> initializeSuccess)
-            {
-                stateMachine = initializeSuccess.Result;
-            }
-            else if (initializeResult is IFailureResult<StackStateMachine<MockStackContext>> initializeFailure)
-            {
-                throw new System.Exception(
-                    $"Failed to initialize stack state machine because of {initializeFailure.Message}.");
-            }
-            else
-            {
-                throw new ResultPatternMatchException(nameof(initializeResult));
-            }
-
-            using var _ = stateMachine;
+            using var stateMachine =
+                (await StackStateMachine<MockStackContext>.CreateAsync(
+                    stateStore.Build(),
+                    new MockStackContext(),
+                    CancellationToken.None))
+                .Unwrap();
 
 #pragma warning disable CS4014
             var firstTask = Task.Run(async () =>

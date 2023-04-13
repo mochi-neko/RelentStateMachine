@@ -44,16 +44,16 @@ namespace Mochineko.RelentStateMachine
             {
                 if (candidates.TryGetValue(@event, out var nextState))
                 {
-                    return ResultFactory.Succeed(nextState);
+                    return Results.Succeed(nextState);
                 }
             }
 
             if (anyTransitionMap.TryGetValue(@event, out var nextStateFromAny))
             {
-                return ResultFactory.Succeed(nextStateFromAny);
+                return Results.Succeed(nextStateFromAny);
             }
 
-            return ResultFactory.Fail<IState<TEvent, TContext>>(
+            return Results.Fail<IState<TEvent, TContext>>(
                 $"Not found transition from {currentState.GetType()} with event {@event}.");
         }
 

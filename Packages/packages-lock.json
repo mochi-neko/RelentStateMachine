@@ -14,12 +14,12 @@
       "dependencies": {},
       "hash": "73d86259ce31ce7f4dfe1d028ea1c3edf96c23e4"
     },
-    "com.mochineko.relent.result": {
-      "version": "https://github.com/mochi-neko/Relent.git?path=/Assets/Mochineko/Relent/Result#0.1.3",
+    "com.mochineko.relent": {
+      "version": "https://github.com/mochi-neko/Relent.git?path=/Assets/Mochineko/Relent#0.2.0",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "3369c27997a40d15a61d7acd679e75ea2793b12d"
+      "hash": "5fd87387912763429e4c8008157ed6a654c3093c"
     },
     "com.unity.editorcoroutines": {
       "version": "1.0.0",
