@@ -17,7 +17,7 @@ namespace Mochineko.RelentStateMachine.Tests
 
             context.Active = false;
 
-            return EventRequests.None<MockEvent>();
+            return EventRequests<MockEvent>.None();
         }
 
         public async UniTask<IEventRequest<MockEvent>> UpdateAsync(MockContext context,
@@ -27,7 +27,7 @@ namespace Mochineko.RelentStateMachine.Tests
                 TimeSpan.FromSeconds(0.01f),
                 cancellationToken: cancellationToken);
 
-            return EventRequests.None<MockEvent>();
+            return EventRequests<MockEvent>.None();
         }
 
         public async UniTask ExitAsync(MockContext context, CancellationToken cancellationToken)

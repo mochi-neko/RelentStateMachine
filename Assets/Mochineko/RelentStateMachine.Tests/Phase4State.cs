@@ -15,14 +15,14 @@ namespace Mochineko.RelentStateMachine.Tests
         {
             context.PhaseCount++;
             
-            return EventRequests.None<MockContinueEvent>();
+            return EventRequests<MockContinueEvent>.None();
         }
 
         public async UniTask<IEventRequest<MockContinueEvent>> UpdateAsync(
             MockContinueContext context,
             CancellationToken cancellationToken)
         {
-            return EventRequests.Request(MockContinueEvent.Stop);
+            return EventRequests<MockContinueEvent>.Request(MockContinueEvent.Stop);
         }
 
         public async UniTask ExitAsync(

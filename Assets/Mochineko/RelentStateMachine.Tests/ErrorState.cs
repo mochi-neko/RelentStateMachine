@@ -13,7 +13,7 @@ namespace Mochineko.RelentStateMachine.Tests
 
             context.ErrorMessage = "Manual Error";
 
-            return EventRequests.None<MockEvent>();
+            return EventRequests<MockEvent>.None();
         }
 
         public async UniTask<IEventRequest<MockEvent>> UpdateAsync(MockContext context,
@@ -21,7 +21,7 @@ namespace Mochineko.RelentStateMachine.Tests
         {
             await UniTask.DelayFrame(1, cancellationToken: cancellationToken);
 
-            return EventRequests.None<MockEvent>();
+            return EventRequests<MockEvent>.None();
         }
 
         public async UniTask ExitAsync(MockContext context, CancellationToken cancellationToken)

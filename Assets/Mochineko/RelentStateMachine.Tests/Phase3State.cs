@@ -17,7 +17,7 @@ namespace Mochineko.RelentStateMachine.Tests
 
             context.PhaseCount++;
 
-            return EventRequests.Request(MockContinueEvent.Continue);
+            return EventRequests<MockContinueEvent>.Request(MockContinueEvent.Continue);
         }
 
         public async UniTask<IEventRequest<MockContinueEvent>> UpdateAsync(
@@ -28,7 +28,7 @@ namespace Mochineko.RelentStateMachine.Tests
                     TimeSpan.FromSeconds(0.01f),
                     cancellationToken: cancellationToken);
 
-            return EventRequests.None<MockContinueEvent>();
+            return EventRequests<MockContinueEvent>.None();
         }
 
         public async UniTask ExitAsync(

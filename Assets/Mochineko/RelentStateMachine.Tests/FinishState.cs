@@ -14,14 +14,14 @@ namespace Mochineko.RelentStateMachine.Tests
         {
             context.Finished = true;
             
-            return EventRequests.None<MockContinueEvent>();
+            return EventRequests<MockContinueEvent>.None();
         }
 
         public async UniTask<IEventRequest<MockContinueEvent>> UpdateAsync(
             MockContinueContext context,
             CancellationToken cancellationToken)
         {
-            return EventRequests.None<MockContinueEvent>();
+            return EventRequests<MockContinueEvent>.None();
         }
 
         public UniTask ExitAsync(
