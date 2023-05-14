@@ -27,11 +27,10 @@ namespace Mochineko.RelentStateMachine.Tests
 
             // NOTE: Built store is immutable.
             using var stateMachine =
-                (await StackStateMachine<MockStackContext>.CreateAsync(
+                await StackStateMachine<MockStackContext>.CreateAsync(
                     stateStore.Build(),
                     new MockStackContext(),
-                    CancellationToken.None))
-                .Unwrap();
+                    CancellationToken.None);
 
             // [Base state] ------------------------------------------------------
 
@@ -249,11 +248,10 @@ namespace Mochineko.RelentStateMachine.Tests
             stateStore.Register<FirstStackState>();
 
             using var stateMachine =
-                (await StackStateMachine<MockStackContext>.CreateAsync(
+                await StackStateMachine<MockStackContext>.CreateAsync(
                     stateStore.Build(),
                     new MockStackContext(),
-                    CancellationToken.None))
-                .Unwrap();
+                    CancellationToken.None);
 
 #pragma warning disable CS4014
             var firstTask = Task.Run(async () =>

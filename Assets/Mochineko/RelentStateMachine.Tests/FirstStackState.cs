@@ -1,30 +1,27 @@
 #nullable enable
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Mochineko.Relent.Result;
+
+#pragma warning disable CS1998
 
 namespace Mochineko.RelentStateMachine.Tests
 {
-#pragma warning disable CS1998
     internal sealed class FirstStackState : IStackState<MockStackContext>
     {
+        public async UniTask EnterAsync(MockStackContext context, CancellationToken cancellationToken)
+        {
+        }
+
+        public async UniTask UpdateAsync(MockStackContext context, CancellationToken cancellationToken)
+        {
+        }
+
+        public async UniTask ExitAsync(MockStackContext context, CancellationToken cancellationToken)
+        {
+        }
+
         public void Dispose()
         {
-        }
-
-        public async UniTask<IResult> EnterAsync(MockStackContext context, CancellationToken cancellationToken)
-        {
-            return Results.Succeed();
-        }
-
-        public async UniTask<IResult> UpdateAsync(MockStackContext context, CancellationToken cancellationToken)
-        {
-            return Results.Succeed();
-        }
-
-        public async UniTask<IResult> ExitAsync(MockStackContext context, CancellationToken cancellationToken)
-        {
-            return Results.Succeed();
         }
     }
 }

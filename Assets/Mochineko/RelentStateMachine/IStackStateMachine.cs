@@ -14,6 +14,6 @@ namespace Mochineko.RelentStateMachine
         UniTask<IResult<IPopToken>> PushAsync<TState>(CancellationToken cancellationToken)
             where TState : IStackState<TContext>;
 
-        UniTask<IResult> UpdateAsync(CancellationToken cancellationToken);
+        UniTask UpdateAsync(CancellationToken cancellationToken);
     }
 }

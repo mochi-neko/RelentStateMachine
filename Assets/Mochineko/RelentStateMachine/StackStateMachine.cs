@@ -25,7 +25,7 @@ namespace Mochineko.RelentStateMachine
         private readonly TimeSpan semaphoreTimeout;
         private const float DefaultSemaphoreTimeoutSeconds = 30f;
 
-        public static async UniTask<IResult<StackStateMachine<TContext>>> CreateAsync(
+        public static async UniTask<StackStateMachine<TContext>> CreateAsync(
             IStateStore<TContext> stateStore,
             TContext context,
             CancellationToken cancellationToken,
@@ -36,20 +36,10 @@ namespace Mochineko.RelentStateMachine
                 context,
                 semaphoreTimeout);
 
-            var initializeResult = await instance.stack.Peek()
+            await instance.stack.Peek()
                 .EnterAsync(context, cancellationToken);
-            switch (initializeResult)
-            {
-                case ISuccessResult:
-                    return Results.Succeed(instance);
 
-                case IFailureResult initializeFailure:
-                    return Results.Fail<StackStateMachine<TContext>>(
-                        $"Failed to enter initial state because of {initializeFailure.Message}.");
-
-                default:
-                    throw new ResultPatternMatchException(nameof(initializeResult));
-            }
+            return instance;
         }
 
         private StackStateMachine(
@@ -92,20 +82,10 @@ namespace Mochineko.RelentStateMachine
             var nextState = stateStore.Get<TState>();
             try
             {
-                var enterResult = await nextState.EnterAsync(Context, cancellationToken);
-                switch (enterResult)
-                {
-                    case ISuccessResult:
-                        stack.Push(nextState);
-                        return Results.Succeed(PopToken.Publish(this));
+                await nextState.EnterAsync(Context, cancellationToken);
 
-                    case IFailureResult enterFailure:
-                        return Results.Fail<IPopToken>(
-                            $"Failed to enter state:{nextState.GetType()} because of {enterFailure.Message}.");
-
-                    default:
-                        throw new ResultPatternMatchException(nameof(enterResult));
-                }
+                stack.Push(nextState);
+                return Results.Succeed(PopToken.Publish(this));
             }
             finally
             {
@@ -113,22 +93,10 @@ namespace Mochineko.RelentStateMachine
             }
         }
 
-        public async UniTask<IResult> UpdateAsync(CancellationToken cancellationToken)
+        public async UniTask UpdateAsync(CancellationToken cancellationToken)
         {
             var currentState = stack.Peek();
-            var updateResult = await currentState.UpdateAsync(Context, cancellationToken);
-            switch (updateResult)
-            {
-                case ISuccessResult:
-                    return Results.Succeed();
-
-                case IFailureResult updateFailure:
-                    return Results.Fail(
-                        $"Failed to update current state:{currentState.GetType()} because of {updateFailure.Message}.");
-
-                default:
-                    throw new ResultPatternMatchException(nameof(updateResult));
-            }
+            await currentState.UpdateAsync(Context, cancellationToken);
         }
 
         private sealed class PopToken : IPopToken
@@ -151,7 +119,7 @@ namespace Mochineko.RelentStateMachine
                     throw new InvalidOperationException(
                         $"Failed to pop because of already popped.");
                 }
-                
+
                 if (publisher.stack.Count is 0)
                 {
                     throw new InvalidOperationException(
@@ -172,25 +140,15 @@ namespace Mochineko.RelentStateMachine
                 }
 
                 popped = true;
-                
+
                 var currentState = publisher.stack.Peek();
-                var exitResult = await currentState
-                    .ExitAsync(publisher.Context, cancellationToken);
                 try
                 {
-                    switch (exitResult)
-                    {
-                        case ISuccessResult:
-                            _ = publisher.stack.Pop();
-                            return Results.Succeed();
+                    await currentState
+                        .ExitAsync(publisher.Context, cancellationToken);
 
-                        case IFailureResult updateFailure:
-                            return Results.Fail(
-                                $"Failed to exit current state:{currentState.GetType()} because of {updateFailure.Message}.");
-
-                        default:
-                            throw new ResultPatternMatchException(nameof(exitResult));
-                    }
+                    publisher.stack.Pop();
+                    return Results.Succeed();
                 }
                 finally
                 {

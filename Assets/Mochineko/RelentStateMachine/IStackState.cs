@@ -8,8 +8,8 @@ namespace Mochineko.RelentStateMachine
 {
     public interface IStackState<in TContext> : IDisposable
     {
-        UniTask<IResult> EnterAsync(TContext context, CancellationToken cancellationToken);
-        UniTask<IResult> UpdateAsync(TContext context, CancellationToken cancellationToken);
-        UniTask<IResult> ExitAsync(TContext context, CancellationToken cancellationToken);
+        UniTask EnterAsync(TContext context, CancellationToken cancellationToken);
+        UniTask UpdateAsync(TContext context, CancellationToken cancellationToken);
+        UniTask ExitAsync(TContext context, CancellationToken cancellationToken);
     }
 }
