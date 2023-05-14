@@ -42,7 +42,7 @@ namespace Mochineko.RelentStateMachine
                 case NoEventRequest<TEvent>:
                     return instance;;
 
-                case ISomeEventRequest<TEvent> eventRequest:
+                case SomeEventRequest<TEvent> eventRequest:
                     var sendEventResult = await instance
                         .SendEventAsync(eventRequest.Event, cancellationToken);
                     return instance;;
@@ -97,7 +97,7 @@ namespace Mochineko.RelentStateMachine
             switch (transitResult)
             {
                 case ISuccessResult<IEventRequest<TEvent>> successResult
-                    when successResult.Result is ISomeEventRequest<TEvent> eventRequest:
+                    when successResult.Result is SomeEventRequest<TEvent> eventRequest:
                     // NOTE: Recursive calling.
                     return await SendEventAsync(eventRequest.Event, cancellationToken);
 
@@ -158,7 +158,7 @@ namespace Mochineko.RelentStateMachine
                 case NoEventRequest<TEvent>:
                     break;
                 
-                case ISomeEventRequest<TEvent> eventRequest:
+                case SomeEventRequest<TEvent> eventRequest:
                     await SendEventAsync(eventRequest.Event, cancellationToken);
                     return;
                 
