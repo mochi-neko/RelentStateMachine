@@ -11,6 +11,6 @@ namespace Mochineko.RelentStateMachine
         TContext Context { get; }
         bool IsCurrentState<TState>() where TState : IState<TEvent, TContext>;
         UniTask<IResult> SendEventAsync(TEvent @event, CancellationToken cancellationToken);
-        UniTask<IResult> UpdateAsync(CancellationToken cancellationToken);
+        UniTask UpdateAsync(CancellationToken cancellationToken);
     }
 }

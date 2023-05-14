@@ -20,18 +20,11 @@ namespace Mochineko.RelentStateMachine.Tests
             transitionMapBuilder.RegisterTransition<InactiveState, ErrorState>(MockEvent.Fail);
             transitionMapBuilder.RegisterTransition<ActiveState, ErrorState>(MockEvent.Fail);
 
-            var initializeResult = await FiniteStateMachine<MockEvent, MockContext>.CreateAsync(
-                transitionMapBuilder.Build(),
-                new MockContext(),
-                this.GetCancellationTokenOnDestroy());
-            if (initializeResult is ISuccessResult<FiniteStateMachine<MockEvent, MockContext>> initializeSuccess)
-            {
-                stateMachine = initializeSuccess.Result;
-            }
-            else
-            {
-                throw new System.Exception("Failed to initialize state machine.");
-            }
+            stateMachine = await FiniteStateMachine<MockEvent, MockContext>
+                .CreateAsync(
+                    transitionMapBuilder.Build(),
+                    new MockContext(),
+                    this.GetCancellationTokenOnDestroy());
         }
 
         private void OnDestroy()
@@ -51,16 +44,7 @@ namespace Mochineko.RelentStateMachine.Tests
                 throw new System.NullReferenceException(nameof(stateMachine));
             }
 
-            var result = await stateMachine.UpdateAsync(
-                this.GetCancellationTokenOnDestroy());
-            if (result.Success)
-            {
-                Debug.Log("Succeeded to update.");
-            }
-            else
-            {
-                Debug.Log("Failed to update.");
-            }
+            await stateMachine.UpdateAsync(this.GetCancellationTokenOnDestroy());
         }
 
         public async UniTask Activate()

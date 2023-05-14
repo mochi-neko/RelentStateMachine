@@ -9,27 +9,27 @@ namespace Mochineko.RelentStateMachine.Tests
 {
     internal sealed class Phase4State : IState<MockContinueEvent, MockContinueContext>
     {
-        public async UniTask<IResult<IEventRequest<MockContinueEvent>>> EnterAsync(
+        public async UniTask<IEventRequest<MockContinueEvent>> EnterAsync(
             MockContinueContext context,
             CancellationToken cancellationToken)
         {
             context.PhaseCount++;
             
-            return StateResults.Succeed<MockContinueEvent>();
+            return EventRequests.None<MockContinueEvent>();
         }
 
-        public async UniTask<IResult<IEventRequest<MockContinueEvent>>> UpdateAsync(
+        public async UniTask<IEventRequest<MockContinueEvent>> UpdateAsync(
             MockContinueContext context,
             CancellationToken cancellationToken)
         {
-            return StateResults.SucceedAndRequest(MockContinueEvent.Stop);
+            return EventRequests.Request(MockContinueEvent.Stop);
         }
 
-        public async UniTask<IResult> ExitAsync(
+        public async UniTask ExitAsync(
             MockContinueContext context,
             CancellationToken cancellationToken)
         {
-            return Results.Succeed();
+            
         }
 
         public void Dispose()

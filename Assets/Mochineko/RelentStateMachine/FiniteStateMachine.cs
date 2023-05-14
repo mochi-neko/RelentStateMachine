@@ -24,7 +24,7 @@ namespace Mochineko.RelentStateMachine
         private readonly TimeSpan semaphoreTimeout;
         private const float DefaultSemaphoreTimeoutSeconds = 30f;
 
-        public static async UniTask<IResult<FiniteStateMachine<TEvent, TContext>>> CreateAsync(
+        public static async UniTask<FiniteStateMachine<TEvent, TContext>> CreateAsync(
             ITransitionMap<TEvent, TContext> transitionMap,
             TContext context,
             CancellationToken cancellationToken,
@@ -35,38 +35,20 @@ namespace Mochineko.RelentStateMachine
                 context,
                 semaphoreTimeout);
 
-            var initializeResult = await instance.currentState
+            var enterResult = await instance.currentState
                 .EnterAsync(context, cancellationToken);
-            switch (initializeResult)
+            switch (enterResult)
             {
-                // Chains immediate event sending.
-                case ISuccessResult<IEventRequest<TEvent>> initializeSuccess
-                    when initializeSuccess.Result is ISomeEventRequest<TEvent> eventRequest:
-                {
+                case NoEventRequest<TEvent>:
+                    return instance;;
+
+                case ISomeEventRequest<TEvent> eventRequest:
                     var sendEventResult = await instance
                         .SendEventAsync(eventRequest.Event, cancellationToken);
-                    return sendEventResult switch
-                    {
-                        ISuccessResult
-                            => Results.Succeed(instance),
-
-                        IFailureResult sendEventFailure
-                            => Results.Fail<FiniteStateMachine<TEvent, TContext>>(
-                                $"Failed to send event at initialization because of {sendEventFailure.Message}."),
-
-                        _ => throw new ResultPatternMatchException(nameof(sendEventResult))
-                    };
-                }
-
-                case ISuccessResult<IEventRequest<TEvent>> initializeSuccess:
-                    return Results.Succeed(instance);
-
-                case IFailureResult<IEventRequest<TEvent>> initializeFailure:
-                    return Results.Fail<FiniteStateMachine<TEvent, TContext>>(
-                        $"Failed to enter initial state because of {initializeFailure.Message}.");
-
+                    return instance;;
+                
                 default:
-                    throw new ResultPatternMatchException(nameof(initializeResult));
+                    throw new ArgumentOutOfRangeException(nameof(enterResult));
             }
         }
 
@@ -150,28 +132,17 @@ namespace Mochineko.RelentStateMachine
             try
             {
                 // Exit current state.
-                var exitResult = await currentState.ExitAsync(Context, cancellationToken);
-                if (exitResult is IFailureResult exitFailure)
-                {
-                    return StateResults.Fail<TEvent>(
-                        $"Failed to exit current state:{currentState.GetType()} because of {exitFailure.Message}.");
-                }
-
+                await currentState.ExitAsync(Context, cancellationToken);
+                
                 // Enter next state.
                 var enterResult = await nextState.EnterAsync(Context, cancellationToken);
-                switch (enterResult)
-                {
-                    case ISuccessResult<IEventRequest<TEvent>> enterSuccess:
-                        currentState = nextState;
-                        return Results.Succeed(enterSuccess.Result);
-
-                    case IFailureResult<IEventRequest<TEvent>> enterFailure:
-                        return StateResults.Fail<TEvent>(
-                            $"Failed to enter state:{nextState.GetType()} because of {enterFailure.Message}.");
-
-                    default:
-                        throw new ResultPatternMatchException(nameof(enterResult));
-                }
+                currentState = nextState;
+                return Results.Succeed(enterResult);
+            }
+            catch (OperationCanceledException exception)
+            {
+                return StateResults.Fail<TEvent>(
+                    $"Cancelled to transit state because of {exception}.");
             }
             finally
             {
@@ -179,25 +150,20 @@ namespace Mochineko.RelentStateMachine
             }
         }
 
-        public async UniTask<IResult> UpdateAsync(CancellationToken cancellationToken)
+        public async UniTask UpdateAsync(CancellationToken cancellationToken)
         {
             var updateResult = await currentState.UpdateAsync(Context, cancellationToken);
             switch (updateResult)
             {
-                case ISuccessResult<IEventRequest<TEvent>> updateSuccess
-                    when updateSuccess.Result is ISomeEventRequest<TEvent> eventRequest:
-                    // NOTE: Can be recursive calling.
-                    return await SendEventAsync(eventRequest.Event, cancellationToken);
-
-                case ISuccessResult<IEventRequest<TEvent>> updateSuccess:
-                    return Results.Succeed();
-
-                case IFailureResult<IEventRequest<TEvent>> updateFailure:
-                    return Results.Fail(
-                        $"Failed to update current state:{currentState.GetType()} because of {updateFailure.Message}.");
-
+                case NoEventRequest<TEvent>:
+                    break;
+                
+                case ISomeEventRequest<TEvent> eventRequest:
+                    await SendEventAsync(eventRequest.Event, cancellationToken);
+                    return;
+                
                 default:
-                    throw new ResultPatternMatchException(nameof(updateResult));
+                    throw new ArgumentOutOfRangeException(nameof(updateResult));
             }
         }
     }

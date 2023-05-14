@@ -25,11 +25,10 @@ namespace Mochineko.RelentStateMachine.Tests
             transitionMapBuilder.RegisterTransition<Phase3State, Phase4State>(MockContinueEvent.Continue);
             transitionMapBuilder.RegisterTransition<Phase4State, FinishState>(MockContinueEvent.Stop);
             
-            using var stateMachine = (await FiniteStateMachine<MockContinueEvent, MockContinueContext>.CreateAsync(
+            using var stateMachine = await FiniteStateMachine<MockContinueEvent, MockContinueContext>.CreateAsync(
                 transitionMapBuilder.Build(),
                 new MockContinueContext(),
-                CancellationToken.None))
-                .Unwrap();
+                CancellationToken.None);
 
             stateMachine.IsCurrentState<Phase4State>()
                 .Should().BeTrue(

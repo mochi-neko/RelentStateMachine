@@ -2,9 +2,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Cysharp.Threading.Tasks;
 using FluentAssertions;
-using Mochineko.Relent.Result;
 using NUnit.Framework;
 using UnityEngine.TestTools;
 
@@ -28,11 +26,10 @@ namespace Mochineko.RelentStateMachine.Tests
 
             // NOTE: Built transition map is immutable.
             using var stateMachine =
-                (await FiniteStateMachine<MockEvent, MockContext>.CreateAsync(
+                await FiniteStateMachine<MockEvent, MockContext>.CreateAsync(
                     transitionMapBuilder.Build(),
                     new MockContext(),
-                    CancellationToken.None))
-                .Unwrap();
+                    CancellationToken.None);
 
             // Inactive state ------------------------------------------------------
 
@@ -143,11 +140,10 @@ namespace Mochineko.RelentStateMachine.Tests
             transitionMapBuilder.RegisterAnyTransition<ErrorState>(MockEvent.Fail);
 
             using var stateMachine =
-                (await FiniteStateMachine<MockEvent, MockContext>.CreateAsync(
+                await FiniteStateMachine<MockEvent, MockContext>.CreateAsync(
                     transitionMapBuilder.Build(),
                     new MockContext(),
-                    CancellationToken.None))
-                .Unwrap();
+                    CancellationToken.None);
 
 #pragma warning disable CS4014
             var firstTask = Task.Run(async () =>

@@ -2,66 +2,42 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Mochineko.Relent.Result;
 
 namespace Mochineko.RelentStateMachine.Tests
 {
     internal sealed class Phase2State : IState<MockContinueEvent, MockContinueContext>
     {
-        public async UniTask<IResult<IEventRequest<MockContinueEvent>>> EnterAsync(
+        public async UniTask<IEventRequest<MockContinueEvent>> EnterAsync(
             MockContinueContext context,
             CancellationToken cancellationToken)
         {
-            try
-            {
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(0.01f),
-                    cancellationToken: cancellationToken);
-            }
-            catch (OperationCanceledException exception)
-            {
-                return StateResults.Fail<MockContinueEvent>(exception.Message);
-            }
-            
+            await UniTask.Delay(
+                TimeSpan.FromSeconds(0.01f),
+                cancellationToken: cancellationToken);
+
             context.PhaseCount++;
 
-            return StateResults.SucceedAndRequest(MockContinueEvent.Continue);
+            return EventRequests.Request(MockContinueEvent.Continue);
         }
 
-        public async UniTask<IResult<IEventRequest<MockContinueEvent>>> UpdateAsync(
+        public async UniTask<IEventRequest<MockContinueEvent>> UpdateAsync(
             MockContinueContext context,
             CancellationToken cancellationToken)
         {
-            try
-            {
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(0.01f),
-                    cancellationToken: cancellationToken);
-            }
-            catch (OperationCanceledException exception)
-            {
-                return StateResults.Fail<MockContinueEvent>(exception.Message);
-            }
+            await UniTask.Delay(
+                TimeSpan.FromSeconds(0.01f),
+                cancellationToken: cancellationToken);
 
-            return StateResults.Succeed<MockContinueEvent>();
+            return EventRequests.None<MockContinueEvent>();
         }
 
-        public async UniTask<IResult> ExitAsync(
+        public async UniTask ExitAsync(
             MockContinueContext context,
             CancellationToken cancellationToken)
         {
-            try
-            {
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(0.01f),
-                    cancellationToken: cancellationToken);
-            }
-            catch (OperationCanceledException exception)
-            {
-                return Results.Fail(exception.Message);
-            }
-
-            return Results.Succeed();
+            await UniTask.Delay(
+                TimeSpan.FromSeconds(0.01f),
+                cancellationToken: cancellationToken);
         }
 
         public void Dispose()
