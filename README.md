@@ -21,6 +21,8 @@ An asynchronous-based finite state machine for Unity.
 
 ## How to import by Unity Package Manager
 
+Add following dependencies to your `/Packages/manifest.json`.
+
 ```json
 {
   "dependencies": {
